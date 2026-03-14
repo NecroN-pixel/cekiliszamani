@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>It's time for the draw</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --text: #f8fafc;
+            --card-bg: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .hidden { display: none !important; }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            box-sizing: border-box;
+            background: #0f172a;
+            color: white;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { background-color: #4f46e5; }
+        .winner-card {
+            background: #22c55e;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        h1 { margin-bottom: 20px; font-size: 24px; }
+        #linkContainer { background: #334155; padding: 10px; border-radius: 6px; word-break: break-all; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="creatorSection">
+            <h1>It's time for the draw 🎲</h1>
+            <div id="loginArea">
+                <p>Çekiliş oluşturmak için giriş yapın.</p>
+                <button id="loginBtn">Google ile Giriş Yap</button>
+            </div>
+
+            <div id="dashboardArea" class="hidden">
+                <p>Hoş geldin, <span id="userName"></span>!</p>
+                <button id="logoutBtn" style="background:#ef4444; margin-bottom:20px;">Çıkış Yap</button>
+
+                <h3>Yeni Çekiliş Oluştur</h3>
+                <input type="text" id="drawName" placeholder="Çekiliş İsmi (Boşluk kullanmayın)">
+                <input type="datetime-local" id="drawEndTime" placeholder="Son Katılım (İsteğe Bağlı)">
+                <button id="createDrawBtn">Çekilişi Oluştur & Link Al</button>
+                
+                <div id="linkContainer" class="hidden">
+                    <p>Özel Linkiniz:</p>
+                    <a id="shareLink" href="#" target="_blank" style="color:#60a5fa;"></a>
+                </div>
+
+                <hr style="border-color:#334155; margin: 20px 0;">
+                
+                <h3>Çekilişi Yönet</h3>
+                <input type="text" id="manageDrawId" placeholder="Çekiliş ID'sini (Linkin son kısmı) girin">
+                <button id="loadDrawBtn">Çekilişi Getir</button>
+                
+                <div id="drawManager" class="hidden">
+                    <p>Toplam Katılımcı: <strong id="participantCount">0</strong></p>
+                    <button id="drawWinnerBtn" style="background:#eab308; color:black;">🏆 Kazanan Seç</button>
+                    <div id="winnersList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="participantSection" class="hidden">
+            <h1 id="pDrawName">Çekiliş Vakti!</h1>
+            <p>Bu çekilişe katılıyorsunuz.</p>
+            
+            <form id="joinForm">
+                <input type="text" id="pFullName" placeholder="Gerçek Adınız ve Soyadınız" required>
+                <input type="text" id="pContact" placeholder="E-posta, Tel veya Instagram (Zorunlu)" required>
+                <input type="url" id="pYtLink" placeholder="YouTube Kanal Linkiniz (İsteğe Bağlı)">
+                <button type="submit">Çekilişe Katıl</button>
+            </form>
+            <p id="joinMessage" style="color: #22c55e; display: none;">Katılımınız başarıyla alındı! Bol şans.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, getDoc, getDocs, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // Senin verdiğin Firebase ayarları
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIFpdDza_jwo0W4uQ_wAiTL3jvFLGmFzU",
+            authDomain: "it-s-time-for-the-draw.firebaseapp.com",
+            projectId: "it-s-time-for-the-draw",
+            storageBucket: "it-s-time-for-the-draw.firebasestorage.app",
+            messagingSenderId: "526815408485",
+            appId: "1:526815408485:web:749ad3761c8f97ca14718c",
+            measurementId: "G-JG5PMSX9RH"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // URL Kontrolü (Biz bir çekiliş sayfasında mıyız yoksa ana sayfada mı?)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlCreator = urlParams.get('c');
+        const urlGiveaway = urlParams.get('g');
+
+        const creatorSection = document.getElementById('creatorSection');
+        const participantSection = document.getElementById('participantSection');
+
+        if (urlCreator && urlGiveaway) {
+            // Katılımcı Modu
+            creatorSection.classList.add('hidden');
+            participantSection.classList.remove('hidden');
+            document.getElementById('pDrawName').innerText = `${urlCreator.replace(/_/g, ' ')} - ${urlGiveaway.replace(/_/g, ' ')} Çekilişi`;
+            
+            document.getElementById('joinForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fullName = document.getElementById('pFullName').value;
+                const contact = document.getElementById('pContact').value;
+                const ytLink = document.getElementById('pYtLink').value;
+                const drawId = `${urlCreator}_${urlGiveaway}`;
+
+                try {
+                    // Katılımcıyı veritabanına ekle
+                    await addDoc(collection(db, `giveaways/${drawId}/participants`), {
+                        fullName: fullName,
+                        contact: contact,
+                        ytLink: ytLink,
+                        isWinner: false,
+                        timestamp: new Date()
+                    });
+                    document.getElementById('joinForm').style.display = 'none';
+                    document.getElementById('joinMessage').style.display = 'block';
+                } catch (error) {
+                    alert("Bir hata oluştu: " + error.message);
+                }
+            });
+
+        } else {
+            // Çekiliş Yapan (Yönetici) Modu
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const loginArea = document.getElementById('loginArea');
+            const dashboardArea = document.getElementById('dashboardArea');
+            let currentUser = null;
+
+            // Giriş Durumu Dinleyicisi
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    loginArea.classList.add('hidden');
+                    dashboardArea.classList.remove('hidden');
+                    document.getElementById('userName').innerText = user.displayName;
+                } else {
+                    currentUser = null;
+                    loginArea.classList.remove('hidden');
+                    dashboardArea.classList.add('hidden');
+                }
+            });
+
+            // Google ile Giriş
+            loginBtn.addEventListener('click', () => {
+                const provider = new GoogleAuthProvider();
+                signInWithPopup(auth, provider).catch(err => alert(err.message));
+            });
+
+            // Çıkış
+            logoutBtn.addEventListener('click', () => {
+                signOut(auth);
+            });
+
+            // Çekiliş Oluştur
+            document.getElementById('createDrawBtn').addEventListener('click', async () => {
+                const drawNameRaw = document.getElementById('drawName').value;
+                const endTime = document.getElementById('drawEndTime').value;
+                
+                if(!drawNameRaw) return alert('Lütfen çekiliş ismi girin!');
+                
+                // İsimleri URL'ye uygun hale getir
+                const safeCreatorName = currentUser.displayName.replace(/\s+/g, '_').toLowerCase();
+                const safeDrawName = drawNameRaw.replace(/\s+/g, '_').toLowerCase();
+                const drawId = `${safeCreatorName}_${safeDrawName}`;
+
+                try {
+                    await setDoc(doc(db, "giveaways", drawId), {
+                        creatorId: currentUser.uid,
+                        creatorName: safeCreatorName,
+                        drawName: safeDrawName,
+                        endTime: endTime,
+                        createdAt: new Date()
+                    });
+                    
+                    const link = `${window.location.origin}${window.location.pathname}?c=${safeCreatorName}&g=${safeDrawName}`;
+                    const linkContainer = document.getElementById('linkContainer');
+                    const shareLink = document.getElementById('shareLink');
+                    
+                    shareLink.href = link;
+                    shareLink.innerText = link;
+                    linkContainer.classList.remove('hidden');
+                    
+                    // Yönetim alanına otomatik doldur
+                    document.getElementById('manageDrawId').value = drawId;
+                } catch (error) {
+                    alert('Hata: ' + error.message);
+                }
+            });
+
+            // Çekilişi Yönet & Katılımcıları Çek
+            let currentParticipants = [];
+            let currentDrawId = "";
+            let winnerCount = 0;
+
+            document.getElementById('loadDrawBtn').addEventListener('click', async () => {
+                currentDrawId = document.getElementById('manageDrawId').value;
+                if(!currentDrawId) return alert('Çekiliş ID girin (örn: ismail_iphone_cekilisi)');
+                
+                const q = query(collection(db, `giveaways/${currentDrawId}/participants`), where("isWinner", "==", false));
+                const querySnapshot = await getDocs(q);
+                
+                currentParticipants = [];
+                querySnapshot.forEach((doc) => {
+                    currentParticipants.push({ id: doc.id, ...doc.data() });
+                });
+                
+                document.getElementById('participantCount').innerText = currentParticipants.length;
+                document.getElementById('drawManager').classList.remove('hidden');
+                document.getElementById('winnersList').innerHTML = "";
+                winnerCount = 0;
+            });
+
+            // Kazanan Çek
+            document.getElementById('drawWinnerBtn').addEventListener('click', async () => {
+                if(currentParticipants.length === 0) {
+                    return alert('Çekiliş yapacak uygun katılımcı kalmadı!');
+                }
+
+                // Rastgele seç
+                const randomIndex = Math.floor(Math.random() * currentParticipants.length);
+                const winner = currentParticipants[randomIndex];
+                winnerCount++;
+
+                // Seçileni veritabanında "kazandı" olarak işaretle (Bir daha çıkmasın diye)
+                const winnerRef = doc(db, `giveaways/${currentDrawId}/participants`, winner.id);
+                await updateDoc(winnerRef, { isWinner: true });
+
+                // Listeden çıkar
+                currentParticipants.splice(randomIndex, 1);
+                document.getElementById('participantCount').innerText = currentParticipants.length;
+
+                // Ekrana yazdır
+                const winnerDiv = document.createElement('div');
+                winnerDiv.className = 'winner-card';
+                winnerDiv.innerHTML = `
+                    ${winnerCount}. Kazanan: ${winner.fullName} <br>
+                    <small>İletişim: ${winner.contact}</small><br>
+                    ${winner.ytLink ? `<small>YT: <a href="${winner.ytLink}" target="_blank" style="color:white;">Kanala Git</a></small>` : ''}
+                `;
+                document.getElementById('winnersList').appendChild(winnerDiv);
+            });
+        }
+    </script>
+</body>
+</html>
