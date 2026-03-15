@@ -583,11 +583,11 @@ const isPart=urlC&&urlG;
 /* ── AUTH ── */
 let me=null;
 let partInited=false;
+let authReady=false;
 
-onAuthStateChanged(auth,user=>{
+function applyUser(user){
   me=user;
 
-  /* Participant mode — init only once */
   if(isPart){
     document.getElementById('nav').classList.add('hidden');
     showPage('pageParticipant');
@@ -596,48 +596,60 @@ onAuthStateChanged(auth,user=>{
   }
 
   if(user){
-    document.getElementById('nav').classList.remove('hidden');
+    const nav=document.getElementById('nav');
+    const navAvatar=document.getElementById('navAvatar');
+    const navName=document.getElementById('navName');
+    const dashName=document.getElementById('dashName');
+    if(nav) nav.classList.remove('hidden');
     const name=(user.displayName||user.email||'Kullanici').trim();
     const init=name.split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
-    document.getElementById('navAvatar').textContent=init;
-    document.getElementById('navName').textContent=name.split(/\s+/)[0];
-    document.getElementById('dashName').textContent=name.split(/\s+/)[0];
+    if(navAvatar) navAvatar.textContent=init;
+    if(navName) navName.textContent=name.split(/\s+/)[0];
+    if(dashName) dashName.textContent=name.split(/\s+/)[0];
     showPage('pageDiscover');
   }else{
-    document.getElementById('nav').classList.add('hidden');
+    const nav=document.getElementById('nav');
+    if(nav) nav.classList.add('hidden');
     showPage('pageLogin');
   }
-});
+}
 
-/* Check redirect result first (runs after redirect login on mobile) */
+/* Handle redirect result FIRST, then listen for state changes */
 getRedirectResult(auth).then(result=>{
-  /* onAuthStateChanged handles the rest */
-}).catch(e=>{
-  if(e&&e.code&&e.code!=='auth/no-current-user'){
-    const errDiv=document.getElementById('loginError');
-    if(errDiv){errDiv.textContent='Giriş hatası: '+e.code;errDiv.style.display='block';}
+  if(result&&result.user){
+    applyUser(result.user);
+    authReady=true;
   }
+}).catch(e=>{
+  if(e&&e.code){
+    const errDiv=document.getElementById('loginError');
+    let msg='Giris hatasi: '+e.code;
+    if(e.code==='auth/unauthorized-domain') msg='Domain Firebase yetkili degil. Firebase Console > Authentication > Authorized Domains kismina domaini ekle.';
+    if(errDiv){errDiv.textContent=msg;errDiv.style.display='block';}
+  }
+}).finally(()=>{
+  /* After redirect check completes, listen for ongoing auth state */
+  onAuthStateChanged(auth,user=>{
+    applyUser(user);
+  });
 });
 
-document.getElementById('loginBtn').addEventListener('click',async()=>{
+document.getElementById('loginBtn').addEventListener('click',()=>{
   const btn=document.getElementById('loginBtn');
   const origHTML=btn.innerHTML;
-  btn.innerHTML='<span class="spinner"></span> Giriş yapılıyor…';
+  btn.innerHTML='<span class="spinner"></span> Yonlendiriliyor...';
   btn.style.pointerEvents='none';
   const provider=new GoogleAuthProvider();
-  /* Always use redirect — works on all browsers/mobile */
-  try{
-    await signInWithRedirect(auth,provider);
-  }catch(e){
+  signInWithRedirect(auth,provider).catch(e=>{
     btn.innerHTML=origHTML;
     btn.style.pointerEvents='';
     const errDiv=document.getElementById('loginError');
     let msg='Hata: '+e.code;
-    if(e.code==='auth/unauthorized-domain') msg='Bu domain Firebase yetkili degil. Firebase Console > Authentication > Authorized Domains kismina ekle.';
-    if(e.code==='auth/operation-not-allowed') msg='Google girisi aktif degil. Firebase Console > Authentication > Sign-in method > Google aktif et.';
+    if(e.code==='auth/unauthorized-domain') msg='Domain Firebase yetkili degil. Authorized Domains'e ekle.';
+    if(e.code==='auth/operation-not-allowed') msg='Google girisi aktif degil. Sign-in method > Google aktif et.';
     if(errDiv){errDiv.textContent=msg;errDiv.style.display='block';}
     toast(msg,'err');
-  }
+  });
 });
 
 document.getElementById('navLogout').addEventListener('click',()=>signOut(auth));
