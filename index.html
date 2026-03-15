@@ -496,7 +496,7 @@ Raffle Ekibi 🎲</textarea>
 <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, doc, setDoc, getDoc, getDocs,
   updateDoc, deleteDoc, query, where, onSnapshot, increment
@@ -609,33 +609,34 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
+/* Check redirect result first (runs after redirect login on mobile) */
+getRedirectResult(auth).then(result=>{
+  /* onAuthStateChanged handles the rest */
+}).catch(e=>{
+  if(e&&e.code&&e.code!=='auth/no-current-user'){
+    const errDiv=document.getElementById('loginError');
+    if(errDiv){errDiv.textContent='Giriş hatası: '+e.code;errDiv.style.display='block';}
+  }
+});
+
 document.getElementById('loginBtn').addEventListener('click',async()=>{
   const btn=document.getElementById('loginBtn');
   const origHTML=btn.innerHTML;
   btn.innerHTML='<span class="spinner"></span> Giriş yapılıyor…';
   btn.style.pointerEvents='none';
+  const provider=new GoogleAuthProvider();
+  /* Always use redirect — works on all browsers/mobile */
   try{
-    await signInWithPopup(auth,new GoogleAuthProvider());
+    await signInWithRedirect(auth,provider);
   }catch(e){
     btn.innerHTML=origHTML;
     btn.style.pointerEvents='';
     const errDiv=document.getElementById('loginError');
-    let msg='';
-    if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'){
-      return; /* user closed popup — no error needed */
-    } else if(e.code==='auth/popup-blocked'){
-      msg='Popup engellendi. Tarayici ayarlarindan popup izni ver veya adres cubugundaki popup ikonuna tikla.';
-    } else if(e.code==='auth/unauthorized-domain'){
-      msg='Bu domain Firebase\'de yetkili degil. Firebase Console > Authentication > Authorized Domains kismina bu domaini ekle.';
-    } else if(e.code==='auth/operation-not-allowed'){
-      msg='Google girisi aktif degil. Firebase Console > Authentication > Sign-in method kismından Google\u2019u etkinlestir.';
-    } else {
-      msg='Hata: '+e.message;
-    }
-    if(msg){
-      if(errDiv){errDiv.textContent=msg;errDiv.style.display='block';}
-      toast(msg,'err');
-    }
+    let msg='Hata: '+e.code;
+    if(e.code==='auth/unauthorized-domain') msg='Bu domain Firebase yetkili degil. Firebase Console > Authentication > Authorized Domains kismina ekle.';
+    if(e.code==='auth/operation-not-allowed') msg='Google girisi aktif degil. Firebase Console > Authentication > Sign-in method > Google aktif et.';
+    if(errDiv){errDiv.textContent=msg;errDiv.style.display='block';}
+    toast(msg,'err');
   }
 });
 
