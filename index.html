@@ -1808,103 +1808,151 @@ async function initPP(){
   document.getElementById("ppTitle").innerHTML='<span>'+(urlG||"").replace(/_/g," ")+'</span>';
   document.getElementById("ppBy").textContent=(urlC||"").replace(/_/g," ")+" tarafindan";
   const lsKey="joined_"+drawId;
-  if(localStorage.getItem(lsKey)){
-    document.getElementById("ppFormCard").classList.add("hidden");
-    document.getElementById("ppAlr").style.display="block";
-    return;
-  }
+  window._ppDrawId=drawId;
+
+  // Load draw data first (always)
   try{
     const dd=await getDoc(doc(db,"giveaways",drawId));
     if(dd.exists()){
       const dw=dd.data();
+      // Cover image
       if(dw.imageUrl&&dw.imageUrl.startsWith("http")){
-        const ci=document.getElementById("ppImg");ci.src=dw.imageUrl;ci.style.display="block";
-        document.getElementById("ppIco").style.display="none";
+        const ci=document.getElementById("ppImg");
+        if(ci){ci.src=dw.imageUrl;ci.style.display="block";}
+        const ico=document.getElementById("ppIco");
+        if(ico)ico.style.display="none";
       }
-      if(dw.desc){document.getElementById("ppDescEl").textContent=dw.desc;}
-      // Block join if draw ended
-      if(dw.endTime && new Date(dw.endTime) < new Date()){
-        const formCard=document.getElementById("ppFormCard");
-        if(formCard){
-          formCard.innerHTML='<div style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:10px">⏰</div><div style="font-family:\'Unbounded\',sans-serif;font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px">Cekilis Sona Erdi!</div><div style="font-size:12px;color:var(--t2)">Bu cekilisin suresi dolmustur. Katilim kapali.</div></div>';
-        }
-        return;
-      }
+      if(dw.desc){const d=document.getElementById("ppDescEl");if(d)d.textContent=dw.desc;}
       if(dw.maxParticipants){
         window._ppMaxP=dw.maxParticipants;
         const sub=document.getElementById("ppFormSub");
         if(sub)sub.textContent="Sadece @gmail.com. Max "+dw.maxParticipants+" kisi katilabilir.";
       }
       // Store draw info for support
-      window._ppDrawName = dw.drawName||drawId;
-      window._ppOrgEmailFinal = dw.organizerEmail || "";
+      window._ppDrawName=dw.drawName||drawId;
+      window._ppOrgEmailFinal=dw.organizerEmail||"";
+      // Prizes
       const medals=["🥇","🥈","🥉"],cls=["pp-p1","pp-p2","pp-p3"],lbl=["Birinci Odul","Ikinci Odul","Ucuncu Odul"];
       if((dw.prizes||[]).length){
-        const pc=document.getElementById("ppPrizes");pc.classList.remove("hidden");
-        pc.innerHTML=dw.prizes.map((p,i)=>'<div class="pp-prize '+(cls[i]||"")+'"><div class="pp-medal">'+(medals[i]||"🎁")+'</div><div><div class="pp-pl">'+(lbl[i]||((i+1)+". Odul"))+'</div><div class="pp-pv">'+p+'</div></div></div>').join("");
+        const pc=document.getElementById("ppPrizes");
+        if(pc){
+          pc.classList.remove("hidden");
+          pc.innerHTML=dw.prizes.map((p,i)=>'<div class="pp-prize '+(cls[i]||"")+'"><div class="pp-medal">'+(medals[i]||"🎁")+'</div><div><div class="pp-pl">'+(lbl[i]||((i+1)+". Odul"))+'</div><div class="pp-pv">'+p+'</div></div></div>').join("");
+        }
       }
+      // Timer
       if(dw.endTime){
         const el=document.getElementById("ppTimer");
-        (function upd(){
+        if(el)(function upd(){
           const d=new Date(dw.endTime)-Date.now();
           if(d<=0){el.textContent="Bitti";el.style.color="var(--red)";return;}
-          const days=Math.floor(d/86400000),h=Math.floor(d/3600000)%24,m=Math.floor(d%3600000/60000),s=Math.floor(d%60000/1000);
-          el.textContent=days>0?days+"g "+h+"s":h>0?h+"s "+m+"dk":(m<10?"0":"")+m+":"+(s<10?"0":"")+s;
+          const days=Math.floor(d/86400000),h=Math.floor(d/3600000)%24,m=Math.floor(d%3600000/60000),sec=Math.floor(d%60000/1000);
+          el.textContent=days>0?days+"g "+h+"s":h>0?h+"s "+m+"dk":(m<10?"0":"")+m+":"+(sec<10?"0":"")+sec;
           setTimeout(upd,1000);
         })();
       }
-    }
-  }catch(e){console.error(e);}
-  // Cancel join handler (works for both already & success states)
-  function setupCancelBtn(id){
-    const btn=document.getElementById(id);
-    if(!btn)return;
-    btn.addEventListener("click",async()=>{
-      if(!confirm("Katiliminizi iptal etmek istediginizden emin misiniz? Bilgileriniz silinecek."))return;
-      btn.disabled=true;btn.textContent="İptal ediliyor...";
-      try{
-        // Find participant by stored email in localStorage or search all
-        const snap=await getDocs(collection(db,"giveaways/"+drawId+"/participants"));
-        let found=null;
-        // Try to match by localStorage hint or just show email input
-        const emailInput=prompt("Katilim silinsin mi? Onaylamak icin Gmail adresinizi girin:");
-        if(!emailInput)return;
-        snap.forEach(d=>{
-          if(d.data().email===emailInput.trim().toLowerCase()&&!d.data().isWinner)found={id:d.id,...d.data()};
-        });
-        if(!found){
-          alert("Bu e-posta ile katilim bulunamadi veya kazanan secilmis (iptal edilemez).");
-          btn.disabled=false;btn.textContent="↩️ Katilimi İptal Et";
-          return;
-        }
-        await deleteDoc(doc(db,"giveaways/"+drawId+"/participants",found.id));
-        const curSnap=await getDoc(doc(db,"giveaways",drawId));
-        if(curSnap.exists()&&(curSnap.data().partCount||0)>0){
-          await updateDoc(doc(db,"giveaways",drawId),{partCount:increment(-1)});
-        }
-        // Clear localStorage
-        localStorage.removeItem("joined_"+drawId);
-        // Reset UI
-        document.getElementById("ppAlr").style.display="none";
-        document.getElementById("ppOk").style.display="none";
-        document.getElementById("ppFormCard").classList.remove("hidden");
-        document.getElementById("ppN").value="";
-        document.getElementById("ppE").value=emailInput.trim().toLowerCase();
-        document.getElementById("ppI").value="";
-        document.getElementById("joinBtn").disabled=false;
-        document.getElementById("joinBtn").innerHTML="🚀 Hemen Katil";
-        alert("Katiliminiz iptal edildi. Formu yeniden doldurabilirsiniz.");
-      }catch(e){
-        alert("Hata: "+e.message);
-        btn.disabled=false;btn.textContent="↩️ Katilimi İptal Et";
+      // Block if ended
+      if(dw.endTime&&new Date(dw.endTime)<new Date()){
+        const fc=document.getElementById("ppFormCard");
+        if(fc){fc.innerHTML='<div style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:10px">⏰</div><div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px">Cekilis Sona Erdi!</div><div style="font-size:12px;color:var(--t2)">Bu cekilise katilim kapali.</div></div>';}
+        setupCancelAndSupport(drawId,lsKey,dw);
+        return;
       }
+    }
+  }catch(e){console.error("draw load error:",e);}
+
+  // Realtime counter
+  if(ppUnsub){ppUnsub();ppUnsub=null;}
+  ppUnsub=onSnapshot(collection(db,"giveaways/"+drawId+"/participants"),snap=>{
+    const maxPP=(window._ppMaxP||0);
+    document.getElementById("ppCnt").textContent=maxPP>0?snap.size+"/"+maxPP:snap.size;
+    // Show winners
+    const winners=[];snap.forEach(d=>{const dt=d.data();if(dt.isWinner)winners.push(dt);});
+    if(winners.length>0){
+      const wSec=document.getElementById("ppWinners");
+      const wl=document.getElementById("ppWinList");
+      if(wSec&&wl){
+        wSec.classList.remove("hidden");
+        const medals=["🥇","🥈","🥉"];
+        wl.innerHTML=winners.map((w,i)=>
+          '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,214,10,.06);border:1px solid rgba(255,214,10,.18);border-radius:10px;margin-bottom:6px">'+
+          '<span style="font-size:18px">'+(medals[i]||"🏆")+'</span>'+
+          '<div><div style="font-weight:600;font-size:13px">'+w.name+'</div>'+
+          '<div style="font-size:10px;color:var(--yel);margin-top:1px">'+w.wonPrize+'</div></div></div>'
+        ).join("");
+      }
+    }
+  });
+
+  // Already joined - show already screen
+  if(localStorage.getItem(lsKey)){
+    document.getElementById("ppFormCard").classList.add("hidden");
+    document.getElementById("ppAlr").style.display="block";
+    setupCancelAndSupport(drawId,lsKey,null);
+    return;
+  }
+
+  // Join button
+  const joinBtn=document.getElementById("joinBtn");
+  if(joinBtn){
+    joinBtn.addEventListener("click",async()=>{
+      if(localStorage.getItem(lsKey)){
+        document.getElementById("ppFormCard").classList.add("hidden");
+        document.getElementById("ppAlr").style.display="block";
+        return;
+      }
+      const name=document.getElementById("ppN").value.trim();
+      const email=document.getElementById("ppEmail")?.value.trim().toLowerCase()||document.getElementById("ppE").value.trim().toLowerCase();
+      const insta=document.getElementById("ppI").value.trim();
+      if(!name){toast("Ad Soyad zorunlu!","err");return;}
+      if(name.split(/\s+/).length<2){toast("Ad ve soyad girin!","err");return;}
+      if(!email){toast("Email zorunlu!","err");return;}
+      const gmailReg=/^[a-zA-Z0-9._%+\-]+@gmail\.com$/;
+      if(!gmailReg.test(email)){toast("Sadece @gmail.com kabul edilir!","err");return;}
+      joinBtn.disabled=true;joinBtn.innerHTML='<span class="spin"></span>';
+      try{
+        // Check max
+        const dwCheck=await getDoc(doc(db,"giveaways",drawId));
+        if(dwCheck.exists()){
+          const dwData=dwCheck.data();
+          const maxP=dwData.maxParticipants||0;
+          if(maxP>0&&(dwData.partCount||0)>=maxP){
+            toast("Bu cekilis dolu! (Max "+maxP+" kisi)","err");
+            joinBtn.disabled=false;joinBtn.innerHTML="🚀 Hemen Katil";return;
+          }
+        }
+        // Duplicate check
+        const qd=query(collection(db,"giveaways/"+drawId+"/participants"),where("email","==",email));
+        const dup=await getDocs(qd);
+        if(!dup.empty){
+          localStorage.setItem(lsKey,"1");window._ppJoinedEmail=email;
+          document.getElementById("ppFormCard").classList.add("hidden");
+          document.getElementById("ppAlr").style.display="block";
+          setupCancelAndSupport(drawId,lsKey,null);return;
+        }
+        await addDoc(collection(db,"giveaways/"+drawId+"/participants"),{name,email,instagram:insta,isWinner:false,timestamp:new Date()});
+        await updateDoc(doc(db,"giveaways",drawId),{partCount:increment(1)});
+        localStorage.setItem(lsKey,"1");window._ppJoinedEmail=email;
+        document.getElementById("ppFormCard").classList.add("hidden");
+        const succ=document.getElementById("ppOk");if(succ)succ.style.display="block";
+        const shareDiv=document.createElement("div");
+        shareDiv.className="share-row";
+        const waBtn2=document.createElement("button");
+        waBtn2.className="btn ghost sm";waBtn2.textContent="💬 WhatsApp";
+        waBtn2.addEventListener("click",()=>window.open("https://wa.me/?text="+encodeURIComponent("Bu cekilise katil: "+location.href),"_blank"));
+        const cpBtn2=document.createElement("button");
+        cpBtn2.className="btn ghost sm";cpBtn2.textContent="📋 Linki Kopyala";
+        cpBtn2.addEventListener("click",()=>navigator.clipboard.writeText(location.href).then(()=>toast("Link kopyalandi!")));
+        shareDiv.appendChild(waBtn2);shareDiv.appendChild(cpBtn2);
+        const ppShare=document.getElementById("ppShare");if(ppShare)ppShare.appendChild(shareDiv);
+        boom();
+        setupCancelAndSupport(drawId,lsKey,null);
+      }catch(e){toast("Hata: "+e.message,"err");joinBtn.disabled=false;joinBtn.innerHTML="🚀 Hemen Katil";}
     });
   }
-  setupCancelBtn("cancelJoinBtn");
-  setupCancelBtn("cancelJoinBtn2");
 
   // Reset form button
-  const resetBtn = document.getElementById("resetFormBtn");
+  const resetBtn=document.getElementById("resetFormBtn");
   if(resetBtn){
     resetBtn.addEventListener("click",()=>{
       document.getElementById("ppN").value="";
@@ -1914,88 +1962,59 @@ async function initPP(){
     });
   }
 
+  setupCancelAndSupport(drawId,lsKey,null);
+}
+
+function setupCancelAndSupport(drawId,lsKey,dwData){
+  // Cancel join
+  ["cancelJoinBtn","cancelJoinBtn2"].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(!btn||btn._wired)return;
+    btn._wired=true;
+    btn.addEventListener("click",async()=>{
+      if(!confirm("Katiliminizi iptal etmek istiyor musunuz?"))return;
+      btn.disabled=true;btn.textContent="Iptal ediliyor...";
+      try{
+        const emailInput=prompt("Onaylamak icin Gmail adresinizi girin:");
+        if(!emailInput){btn.disabled=false;btn.textContent="↩️ Katilimi İptal Et";return;}
+        const snap=await getDocs(collection(db,"giveaways/"+drawId+"/participants"));
+        let found=null;
+        snap.forEach(d=>{if(d.data().email===emailInput.trim().toLowerCase()&&!d.data().isWinner)found={id:d.id,...d.data()};});
+        if(!found){alert("E-posta bulunamadi veya kazanan secilmis.");btn.disabled=false;btn.textContent="↩️ Katilimi İptal Et";return;}
+        await deleteDoc(doc(db,"giveaways/"+drawId+"/participants",found.id));
+        const curSnap=await getDoc(doc(db,"giveaways",drawId));
+        if(curSnap.exists()&&(curSnap.data().partCount||0)>0)await updateDoc(doc(db,"giveaways",drawId),{partCount:increment(-1)});
+        localStorage.removeItem(lsKey);window._ppJoinedEmail="";
+        document.getElementById("ppAlr").style.display="none";
+        document.getElementById("ppOk").style.display="none";
+        document.getElementById("ppFormCard").classList.remove("hidden");
+        document.getElementById("ppN").value="";
+        document.getElementById("ppE").value=emailInput.trim().toLowerCase();
+        document.getElementById("ppI").value="";
+        const jb=document.getElementById("joinBtn");if(jb){jb.disabled=false;jb.innerHTML="🚀 Hemen Katil";}
+        toast("Katilim iptal edildi. Yeniden doldurabilirsiniz.");
+      }catch(e){alert("Hata: "+e.message);btn.disabled=false;btn.textContent="↩️ Katilimi İptal Et";}
+    });
+  });
+
   // Support button
-  const suppBtn = document.getElementById("supportBtn");
-  if(suppBtn){
+  const suppBtn=document.getElementById("supportBtn");
+  if(suppBtn&&!suppBtn._wired){
+    suppBtn._wired=true;
     suppBtn.addEventListener("click",async()=>{
-      let orgEmail = window._ppOrgEmailFinal || "";
-      // If not cached, fetch from Firestore
+      let orgEmail=window._ppOrgEmailFinal||"";
       if(!orgEmail){
         try{
           const dd=await getDoc(doc(db,"giveaways",drawId));
-          if(dd.exists()) orgEmail=dd.data().organizerEmail||"";
+          if(dd.exists())orgEmail=dd.data().organizerEmail||"";
           window._ppOrgEmailFinal=orgEmail;
         }catch(e){}
       }
       const dName=(window._ppDrawName||drawId).replace(/_/g," ");
-      // Get participant email - from Firestore if possible, else form
-      let pEmail=window._ppJoinedEmail||document.getElementById("ppE")?.value||"";
-      openSupport(dName, orgEmail, pEmail);
+      const pEmail=window._ppJoinedEmail||"";
+      openSupport(dName,orgEmail,pEmail);
     });
   }
-
-  if(ppUnsub){ppUnsub();ppUnsub=null;}
-  ppUnsub=onSnapshot(collection(db,"giveaways/"+drawId+"/participants"),snap=>{
-    const maxPP=(window._ppMaxP||0);
-    document.getElementById("ppCnt").textContent=maxPP>0?snap.size+"/"+maxPP:snap.size;
-    // Show winners if any
-    const winners=[];snap.forEach(d=>{const dt=d.data();if(dt.isWinner)winners.push(dt);});
-    if(winners.length>0){
-      const wl=document.getElementById("ppWinList");
-      const wSec=document.getElementById("ppWinners");
-      wSec.classList.remove("hidden");
-      const medals=["🥇","🥈","🥉"];
-      wl.innerHTML=winners.map((w,i)=>
-        '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,214,10,.06);border:1px solid rgba(255,214,10,.18);border-radius:10px;margin-bottom:6px">'+
-        '<span style="font-size:18px">'+(medals[i]||"🏆")+'</span>'+
-        '<div><div style="font-weight:600;font-size:13px">'+w.name+'</div>'+
-        '<div style="font-size:10px;color:var(--yel);margin-top:1px">'+w.wonPrize+'</div></div></div>'
-      ).join("");
-    }
-  });
-  document.getElementById("joinBtn").addEventListener("click",async()=>{
-    if(localStorage.getItem(lsKey)){document.getElementById("ppFormCard").classList.add("hidden");document.getElementById("ppAlr").style.display="block";return;}
-    const name=document.getElementById("ppN").value.trim();
-    const email=document.getElementById("ppE").value.trim().toLowerCase();
-    const insta=document.getElementById("ppI").value.trim();
-    if(!name){toast("Ad Soyad zorunlu!","err");return;}
-    if(name.split(/\s+/).length<2){toast("Ad ve soyad girin!","err");return;}
-    if(!email){toast("Email zorunlu!","err");return;}
-    const gmailReg=/^[a-zA-Z0-9._%+\-]+@gmail\.com$/;if(!gmailReg.test(email)){toast("Gecerli bir @gmail.com adresi girin!","err");return;}
-    const btn=document.getElementById("joinBtn");btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
-    try{
-      const dwCheck=await getDoc(doc(db,"giveaways",drawId));
-      if(dwCheck.exists()){
-        const dwData=dwCheck.data();
-        const maxP=dwData.maxParticipants||0;
-        if(maxP>0&&(dwData.partCount||0)>=maxP){
-          toast("Bu cekilis dolu! (Max "+maxP+" kisi)","err");
-          btn.disabled=false;btn.innerHTML="🚀 Hemen Katil";return;
-        }
-      }
-      const qd=query(collection(db,"giveaways/"+drawId+"/participants"),where("email","==",email));
-      const dup=await getDocs(qd);
-      if(!dup.empty){localStorage.setItem(lsKey,"1");document.getElementById("ppFormCard").classList.add("hidden");document.getElementById("ppAlr").style.display="block";return;}
-      await addDoc(collection(db,"giveaways/"+drawId+"/participants"),{name,email,instagram:insta,isWinner:false,timestamp:new Date()});
-      await updateDoc(doc(db,"giveaways",drawId),{partCount:increment(1)});
-      localStorage.setItem(lsKey,"1");
-      window._ppJoinedEmail=email; // store for support
-      document.getElementById("ppFormCard").classList.add("hidden");
-      document.getElementById("ppOk").style.display="block";
-      const shareUrl=location.href;
-      const shareDiv=document.createElement("div");
-      shareDiv.className="share-row";
-      const waBtn2=document.createElement("button");
-      waBtn2.className="btn ghost sm";waBtn2.textContent="💬 WhatsApp";
-      waBtn2.addEventListener("click",()=>window.open("https://wa.me/?text="+encodeURIComponent("Bu cekilise katil: "+location.href),"_blank"));
-      const cpBtn2=document.createElement("button");
-      cpBtn2.className="btn ghost sm";cpBtn2.textContent="📋 Linki Kopyala";
-      cpBtn2.addEventListener("click",()=>navigator.clipboard.writeText(location.href).then(()=>toast("Link kopyalandi!")));
-      shareDiv.appendChild(waBtn2);shareDiv.appendChild(cpBtn2);
-      document.getElementById("ppShare").appendChild(shareDiv);
-      boom();
-    }catch(e){toast("Hata: "+e.message,"err");btn.disabled=false;btn.innerHTML="🚀 Hemen Katil";}
-  });
 }
 
 // ── SUPPORT SYSTEM ──
