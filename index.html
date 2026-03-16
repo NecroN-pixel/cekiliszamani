@@ -331,6 +331,21 @@ textarea.inp{resize:vertical}
 /* PARTICIPANT RANK BADGE */
 .rank-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
 
+/* SUPPORT MODAL */
+.support-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.88);backdrop-filter:blur(20px);display:flex;align-items:flex-end;justify-content:center;padding:0;opacity:0;pointer-events:none;transition:opacity .22s}
+.support-overlay.on{opacity:1;pointer-events:all}
+.support-sheet{background:linear-gradient(160deg,#0f0f22,#05050f);border:1px solid rgba(255,255,255,.1);border-radius:24px 24px 0 0;padding:20px 18px 32px;width:100%;max-width:520px;transform:translateY(100%);transition:transform .32s cubic-bezier(.34,1.56,.64,1)}
+.support-overlay.on .support-sheet{transform:translateY(0)}
+.support-handle{width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 18px}
+.support-title{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+.support-sub{font-size:12px;color:var(--t2);margin-bottom:18px;line-height:1.5}
+.support-options{display:flex;flex-direction:column;gap:8px}
+.support-opt{display:flex;align-items:center;gap:12px;padding:13px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;cursor:pointer;transition:all .16s;text-align:left;width:100%;font-family:'Outfit',sans-serif}
+.support-opt:hover{background:rgba(255,45,85,.08);border-color:rgba(255,45,85,.25);transform:translateX(3px)}
+.support-opt-icon{font-size:22px;flex-shrink:0;width:36px;text-align:center}
+.support-opt-title{font-size:13px;font-weight:600;color:var(--t1)}
+.support-opt-sub{font-size:11px;color:var(--t3);margin-top:2px}
+
 /* NOTIFICATION BANNER */
 .notif{position:fixed;top:60px;left:0;right:0;z-index:150;padding:10px 16px;text-align:center;font-size:12px;font-weight:600;transform:translateY(-100%);transition:transform .3s ease}
 .notif.show{transform:translateY(0)}
@@ -526,19 +541,31 @@ textarea.inp{resize:vertical}
       <div class="field"><label class="lbl">Ad Soyad *</label><input class="inp" id="ppN" placeholder="Ahmet Yilmaz"></div>
       <div class="field"><label class="lbl">Gmail *</label><input class="inp" type="email" id="ppE" placeholder="ahmet@gmail.com"></div>
       <div class="field"><label class="lbl">Instagram</label><input class="inp" id="ppI" placeholder="@kullanici"></div>
-      <button class="btn fire block" style="padding:11px;font-size:13px" id="joinBtn">🚀 Hemen Katil</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn fire" style="flex:1;padding:11px;font-size:13px" id="joinBtn">🚀 Hemen Katil</button>
+        <button class="btn ghost sm" id="resetFormBtn" style="padding:11px 12px" title="Formu temizle">🗑️</button>
+      </div>
     </div>
     <div class="pp-ok" id="ppOk">
       <span class="pp-ok-i">🎉</span>
       <div class="pp-ok-t">Katildin!</div>
       <div class="pp-ok-s">Kazanirsan Gmail'ine bildirim gelecek. Bol sans! 🍀</div>
       <div style="margin-top:12px" id="ppShare"></div>
+      <div style="margin-top:10px">
+        <button class="btn ghost sm" id="cancelJoinBtn2" style="font-size:10px;color:var(--t3)">↩️ Katilimi İptal Et</button>
+      </div>
     </div>
     <div class="pp-already" id="ppAlr">
       <div style="font-size:28px;margin-bottom:7px">⚠️</div>
       <div style="font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;color:var(--red);margin-bottom:3px">Zaten Katildin!</div>
-      <div style="font-size:11px;color:var(--t2)">Her kisi yalnizca 1 kez katilabilir.</div>
+      <div style="font-size:11px;color:var(--t2);margin-bottom:14px">Bilgilerini guncellemek istiyorsan katilimini iptal edebilirsin.</div>
+      <button class="btn ghost sm" id="cancelJoinBtn" style="font-size:11px">↩️ Katilimi İptal Et</button>
     </div>
+    <!-- SUPPORT BUTTON -->
+    <div style="margin-top:14px;text-align:center">
+      <button class="btn ghost sm" id="supportBtn" style="font-size:11px;color:var(--t3);border-color:rgba(255,255,255,.08)">❓ Sorun mu var? Destek al</button>
+    </div>
+
     <!-- Public winners list -->
     <div id="ppWinners" class="hidden" style="margin-top:14px">
       <div style="font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;color:var(--t2);margin-bottom:9px;letter-spacing:.06em;text-transform:uppercase">🏆 Kazananlar</div>
@@ -579,8 +606,13 @@ textarea.inp{resize:vertical}
       <div class="mgr-stat"><div class="mgr-sn" id="mU">0</div><div class="mgr-sl">Uygun</div></div>
     </div>
     <div class="prize-rows" id="mgrPR"></div>
+    <div class="field" style="margin-bottom:10px">
+      <label class="lbl">Kazanana Ozel Not (e-postaya eklenir)</label>
+      <input class="inp" id="orgNote" placeholder="Odulunuzu almak icin pazartesi 10-18 arasi gelin..." style="font-size:12px;padding:8px 12px">
+    </div>
     <div style="display:flex;gap:6px;margin-bottom:12px">
       <button class="btn gold" style="flex:1;font-size:12px;padding:10px" id="drawBtn">🏆 Kazanan Sec</button>
+      <button class="btn ghost sm" id="rerollBtn" style="padding:9px 11px;border-color:rgba(255,214,10,.3);color:var(--yel)" title="Son kazanani iptal et ve yeniden cek">🔄</button>
       <button class="btn danger sm" id="liveBtn" style="padding:9px 11px">📺 Canli</button>
     </div>
     <div id="mgrWL"></div>
@@ -623,7 +655,7 @@ textarea.inp{resize:vertical}
   <div class="modal" style="max-width:440px">
     <div class="modal-hdr">
       <div><div class="modal-title">Cekilisi Duzenle</div></div>
-      <button class="close-btn" onclick="document.getElementById('editOv').classList.remove('on')">✕</button>
+      <button class="close-btn" id="editCloseBtn">✕</button>
     </div>
     <div class="field"><label class="lbl">Aciklama</label><input class="inp" id="eDesc" placeholder="Aciklama"></div>
     <div class="field"><label class="lbl">Bitis Tarihi</label><input class="inp" type="datetime-local" id="eEnd"></div>
@@ -638,6 +670,17 @@ textarea.inp{resize:vertical}
     </div>
     <div style="display:none"><input id="eName"><input id="eEndOld"></div>
     <button class="btn fire block" id="eSaveBtn" style="padding:11px;font-size:13px">💾 Kaydet</button>
+  </div>
+</div>
+
+<!-- SUPPORT MODAL -->
+<div class="support-overlay" id="supportOv">
+  <div class="support-sheet">
+    <div class="support-handle"></div>
+    <div class="support-title">Destek Merkezi 💬</div>
+    <div class="support-sub" id="supportSubText">Sorununuzu seçin, organizatöre otomatik mesaj gönderelim.</div>
+    <div class="support-options" id="supportOptions"></div>
+    <button class="btn ghost sm" style="width:100%;margin-top:12px;font-size:11px" id="supportClose">Kapat</button>
   </div>
 </div>
 
@@ -877,7 +920,11 @@ async function loadDiscover(){
     renderDiscover();
     startCdTick();
   }catch(e){
-    document.getElementById("discGrid").innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-i">⚠️</div><div class="empty-t" style="color:var(--red)">'+e.message+'</div></div>';
+    let errMsg=e.message||"Bilinmeyen hata";
+    if(e.code==="permission-denied")errMsg="Firebase izin hatasi! Firestore Rules kontrol edin.";
+    if(e.code==="unavailable")errMsg="Baglanti yok. Internet baglantinizi kontrol edin.";
+    document.getElementById("discGrid").innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-i">⚠️</div><div class="empty-t" style="color:var(--red)">'+errMsg+'<br><small style="color:var(--t3);font-size:10px">Sayfayi yenilemek icin tiklayin</small></div></div>';
+    document.getElementById("discGrid").querySelector(".empty-t")?.addEventListener("click",()=>loadDiscover());
   }
 }
 
@@ -990,6 +1037,10 @@ async function loadProfile(cn){
 // ── DASHBOARD ──
 let delId=null;
 async function loadDash(){
+  // Request notification permission
+  if("Notification" in window&&Notification.permission==="default"){
+    Notification.requestPermission();
+  }
   if(!ME){document.getElementById("myGrid").innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-i">🔐</div><div class="empty-t">Giris yap.</div></div>';return;}
   const g=document.getElementById("myGrid");
   g.innerHTML='<div class="empty"><span class="spin"></span></div>';
@@ -1049,6 +1100,7 @@ async function openEdit(drawId){
   document.getElementById("eName").value=(dw.drawName||"").replace(/_/g," ");
   document.getElementById("eDesc").value=dw.desc||"";
   document.getElementById("eEnd").value=dw.endTime||"";
+  document.getElementById("eEndOld").value=dw.endTime||"";
   document.getElementById("eMaxP").value=dw.maxParticipants||0;
   document.getElementById("ePrize1").value=(dw.prizes||[])[0]||"";
   document.getElementById("ePrize2").value=(dw.prizes||[])[1]||"";
@@ -1058,9 +1110,14 @@ async function openEdit(drawId){
     const btn=document.getElementById("eSaveBtn");btn.disabled=true;
     try{
       const prizes=[document.getElementById("ePrize1").value.trim(),document.getElementById("ePrize2").value.trim(),document.getElementById("ePrize3").value.trim()].filter(Boolean);
+      const newEnd=document.getElementById("eEnd").value;
+      const wasEnded=document.getElementById("eEndOld").value&&new Date(document.getElementById("eEndOld").value)<new Date();
+      if(wasEnded&&newEnd&&new Date(newEnd)>new Date()){
+        toast("Cekilis suresi uzatildi ve yeniden aktif edildi!","");
+      }
       await updateDoc(doc(db,"giveaways",drawId),{
         desc:document.getElementById("eDesc").value.trim(),
-        endTime:document.getElementById("eEnd").value,
+        endTime:newEnd,
         maxParticipants:parseInt(document.getElementById("eMaxP").value)||0,
         prizes,
         isPrivate:document.getElementById("ePriv").checked
@@ -1200,6 +1257,8 @@ async function openMgr(drawId,drawName,prizes){
   document.getElementById("mgrS").textContent=prizes.join(" · ")||"Odul yok";
   document.getElementById("mgrWL").innerHTML="";document.getElementById("partsSec").innerHTML="";
   const dd=await getDoc(doc(db,"giveaways",drawId));if(dd.exists())mgrData=dd.data();
+  // Store organizer email for any support use
+  if(ME)mgrData.organizerEmail=ME.email;
   const pr=document.getElementById("mgrPR");pr.innerHTML="";
   const medals=["🥇","🥈","🥉"];
   prizes.forEach((p,i)=>{
@@ -1223,9 +1282,22 @@ async function openMgr(drawId,drawName,prizes){
       allPts.sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
       allPts.forEach(p=>{
         const d=document.createElement("div");d.className="part-row";
-        d.innerHTML='<div><div class="part-name">'+(p.name||"—")+'</div><div class="part-email">'+(p.email||"")+'</div></div>'+(p.isWinner?'<span class="part-bdg">Kazanan</span>':"");
+        d.innerHTML='<div><div class="part-name">'+(p.name||"—")+'</div><div class="part-email">'+(p.email||"")+'</div></div>'+
+          '<div style="display:flex;gap:4px;align-items:center">'+
+            (p.isWinner?'<span class="part-bdg">Kazanan</span>':'')+
+            (!p.isWinner?'<button class="btn danger sm rm-part" data-id="'+p.id+'" data-name="'+(p.name||"—")+'" style="font-size:9px;padding:3px 7px">✕</button>':'')+
+          '</div>';
         ps.appendChild(d);
       });
+      // Remove participant handlers
+      ps.querySelectorAll(".rm-part").forEach(btn=>btn.addEventListener("click",async()=>{
+        if(!confirm((btn.dataset.name||"Bu katilimci")+" silinsin mi?"))return;
+        try{
+          await deleteDoc(doc(db,"giveaways/"+mgrId+"/participants",btn.dataset.id));
+          await updateDoc(doc(db,"giveaways",mgrId),{partCount:increment(-1)});
+          toast("Katilimci cikarildi");
+        }catch(e){toast("Hata: "+e.message,"err");}
+      }));
     } else ps.innerHTML="";
   });
 }
@@ -1253,6 +1325,32 @@ function loadJoinStats(drawId){
     if(wl)wl.insertAdjacentHTML("afterend",html);
   }).catch(()=>{});
 }
+
+document.getElementById("rerollBtn").addEventListener("click",async()=>{
+  if(mgrWin===0){toast("Henuz kazanan secilmedi","warn");return;}
+  if(!confirm("Son kazanani iptal edip yeniden cekmek istiyor musunuz?"))return;
+  // Find last winner
+  try{
+    const snap=await getDocs(collection(db,"giveaways/"+mgrId+"/participants"));
+    let lastWinner=null;
+    snap.forEach(d=>{
+      const dt={id:d.id,...d.data()};
+      if(dt.isWinner&&dt.wonAt){
+        if(!lastWinner||dt.wonAt.seconds>lastWinner.wonAt.seconds)lastWinner=dt;
+      }
+    });
+    if(!lastWinner){toast("Kazanan bulunamadi","err");return;}
+    await updateDoc(doc(db,"giveaways/"+mgrId+"/participants",lastWinner.id),{isWinner:false,wonPrize:null,wonAt:null});
+    await updateDoc(doc(db,"giveaways",mgrId),{winCount:increment(-1)});
+    mgrWin--;
+    mgrWin=Math.max(0,mgrWin);
+    const btn=document.getElementById("drawBtn");btn.disabled=false;btn.style.opacity="1";btn.textContent="🏆 Kazanan Sec";
+    toast("Son kazanan iptal edildi. Yeniden cekebilirsiniz!","warn");
+    // Clear last winner card
+    const firstCard=document.getElementById("mgrWL").querySelector(".w-card");
+    if(firstCard)firstCard.style.opacity="0.4";
+  }catch(e){toast("Hata: "+e.message,"err");}
+});
 
 function closeMgr(){document.getElementById("mgrOv").classList.remove("on");if(mgrUnsub){mgrUnsub();mgrUnsub=null;}loadDash();}
 document.getElementById("mgrX").addEventListener("click",closeMgr);
@@ -1330,7 +1428,136 @@ document.getElementById("drawBtn").addEventListener("click",async()=>{
       try{
         emailjs.init({publicKey:ejsKey});
         const wn=winner.name||"Kazanan",dc=(drawName||mgrId).replace(/_/g," "),oe=ME?ME.email||"":"";
-        const body='<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;background:#0d0d0d;border-radius:16px;overflow:hidden"><div style="background:linear-gradient(135deg,#ff2d55,#ff9500);padding:28px;text-align:center"><div style="font-size:44px;margin-bottom:7px">&#127942;</div><div style="color:#fff;font-size:20px;font-weight:800">Tebrikler!</div></div><div style="padding:28px"><p style="color:#f0f0ff;font-size:15px;margin:0 0 18px">Merhaba <b>'+wn+'</b>,</p><div style="background:rgba(255,214,10,.08);border:1px solid rgba(255,214,10,.28);border-radius:11px;padding:18px;margin-bottom:18px;text-align:center"><div style="color:#ffd60a;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px">KAZANILAN ODUL</div><div style="color:#f0f0ff;font-size:18px;font-weight:800">'+prize+'</div><div style="color:#9898b8;font-size:12px;margin-top:3px">'+dc+'</div></div><div style="background:#1a1a2e;border-radius:11px;padding:14px;margin-bottom:20px"><div style="color:#9898b8;font-size:11px;margin-bottom:5px">Organizator:</div><a href="mailto:'+oe+'" style="color:#ff2d55;font-size:14px;font-weight:600;text-decoration:none">'+oe+'</a></div><p style="color:#9898b8;font-size:12px;line-height:1.6;margin:0">Odulunuzu teslim almak icin organizatore yazabilirsiniz.</p></div><div style="background:#0a0a14;padding:14px;text-align:center"><div style="color:#5a5a7a;font-size:11px">Raffle Ekibi &#127922;</div></div></div>';
+        const orgNote=document.getElementById("orgNote")?document.getElementById("orgNote").value.trim():"";
+        const body='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tebrikler!</title></head><body style="margin:0;padding:0;background:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif">'+
+'<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:32px 16px">'+
+'<tr><td align="center">'+
+'<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto">'+
+
+'<!-- LOGO BAR -->'+
+'<tr><td style="padding:0 0 20px;text-align:center">'+
+'<span style="font-family:Impact,sans-serif;font-size:22px;font-weight:900;background:linear-gradient(135deg,#ff2d55,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.02em">RAFFLE</span>'+
+'</td></tr>'+
+
+'<!-- HERO BANNER -->'+
+'<tr><td style="border-radius:20px 20px 0 0;background:linear-gradient(135deg,#1a0010 0%,#0d0520 50%,#001a10 100%);padding:0;overflow:hidden">'+
+'<table width="100%" cellpadding="0" cellspacing="0">'+
+'<tr><td style="background:linear-gradient(135deg,#ff2d55,#ff6b00);padding:3px 0;border-radius:20px 20px 0 0"></td></tr>'+
+'<tr><td style="padding:40px 32px 36px;text-align:center">'+
+'<div style="display:inline-block;background:rgba(255,214,10,.12);border:2px solid rgba(255,214,10,.35);border-radius:50%;width:72px;height:72px;line-height:72px;font-size:40px;margin-bottom:18px">&#127942;</div>'+
+'<h1 style="margin:0 0 8px;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:-.04em;line-height:1.1">Tebrikler,<br><span style="background:linear-gradient(135deg,#ffd60a,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">'+wn+'!</span></h1>'+
+'<p style="margin:0;font-size:15px;color:rgba(255,255,255,.6);letter-spacing:.01em">Cekilisi Kazandiniz 🎉</p>'+
+'</td></tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- PRIZE CARD -->'+
+'<tr><td style="background:#0f0f1e;padding:0 32px">'+
+'<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:linear-gradient(135deg,rgba(255,214,10,.08),rgba(255,149,0,.05));border:1px solid rgba(255,214,10,.3);border-radius:14px;overflow:hidden">'+
+'<tr><td style="background:linear-gradient(135deg,rgba(255,214,10,.15),rgba(255,149,0,.1));padding:10px 20px;text-align:center">'+
+'<span style="font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:#ffd60a">✦ KAZANILAN ODUL ✦</span>'+
+'</td></tr>'+
+'<tr><td style="padding:22px 20px;text-align:center">'+
+'<div style="font-size:28px;font-weight:900;color:#ffffff;margin-bottom:6px;letter-spacing:-.02em">'+prize+'</div>'+
+'<div style="display:inline-block;background:rgba(255,149,0,.12);border:1px solid rgba(255,149,0,.3);border-radius:20px;padding:4px 14px;font-size:12px;color:#ff9500;font-weight:600;margin-top:4px">'+dc+' Cekilisi</div>'+
+'</td></tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- STEPS -->'+
+'<tr><td style="background:#0f0f1e;padding:0 32px 24px">'+
+'<p style="margin:0 0 14px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3)">ODULUNUZU ALMAK ICIN</p>'+
+'<table width="100%" cellpadding="0" cellspacing="0">'+
+'<tr>'+
+'<td width="36" style="vertical-align:top;padding-right:10px">'+
+'<div style="width:32px;height:32px;background:linear-gradient(135deg,#ff2d55,#ff9500);border-radius:8px;text-align:center;line-height:32px;font-size:14px;font-weight:900;color:#fff">1</div>'+
+'</td>'+
+'<td style="vertical-align:middle;padding:6px 0">'+
+'<div style="font-size:13px;color:#f0f0ff;font-weight:600">Organizatore Ulasin</div>'+
+'<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">Asagidaki e-posta adresine yazin</div>'+
+'</td>'+
+'</tr>'+
+'<tr><td colspan="2" style="padding:6px 0">'+
+'<div style="height:20px;border-left:1px dashed rgba(255,255,255,.1);margin-left:16px"></div>'+
+'</td></tr>'+
+'<tr>'+
+'<td width="36" style="vertical-align:top;padding-right:10px">'+
+'<div style="width:32px;height:32px;background:linear-gradient(135deg,#0a84ff,#5856d6);border-radius:8px;text-align:center;line-height:32px;font-size:14px;font-weight:900;color:#fff">2</div>'+
+'</td>'+
+'<td style="vertical-align:middle;padding:6px 0">'+
+'<div style="font-size:13px;color:#f0f0ff;font-weight:600">Bu E-postayı Gosterin</div>'+
+'<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">Kazandığınızın kaniti olarak kullanin</div>'+
+'</td>'+
+'</tr>'+
+'<tr><td colspan="2" style="padding:6px 0">'+
+'<div style="height:20px;border-left:1px dashed rgba(255,255,255,.1);margin-left:16px"></div>'+
+'</td></tr>'+
+'<tr>'+
+'<td width="36" style="vertical-align:top;padding-right:10px">'+
+'<div style="width:32px;height:32px;background:linear-gradient(135deg,#34c759,#00b894);border-radius:8px;text-align:center;line-height:32px;font-size:14px;font-weight:900;color:#fff">3</div>'+
+'</td>'+
+'<td style="vertical-align:middle;padding:6px 0">'+
+'<div style="font-size:13px;color:#f0f0ff;font-weight:600">Odulunuzu Teslim Alin</div>'+
+'<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">Organizator size ulaşacaktir</div>'+
+'</td>'+
+'</tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- CONTACT -->'+
+'<tr><td style="background:#0f0f1e;padding:0 32px 28px">'+
+'<table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,45,85,.07);border:1px solid rgba(255,45,85,.2);border-radius:12px">'+
+'<tr><td style="padding:16px 18px">'+
+'<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:7px">ORGANIZATOR ILETISIM</div>'+
+'<div style="display:flex;align-items:center;gap:10px">'+
+'<div style="font-size:22px">👤</div>'+
+'<div>'+
+'<div style="font-size:14px;font-weight:700;color:#f0f0ff;margin-bottom:2px">'+oe+'</div>'+
+'<a href="mailto:'+oe+'" style="font-size:11px;color:#ff2d55;text-decoration:none;font-weight:600">✉ E-posta Gonder →</a>'+
+'</div>'+
+'</div>'+
+'</td></tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- DIVIDER -->'+
+'<tr><td style="background:#0f0f1e;padding:0 32px">'+
+'<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent)"></div>'+
+'</td></tr>'+
+
+'<!-- INFO ROW -->'+
+'<tr><td style="background:#0f0f1e;padding:20px 32px">'+
+'<table width="100%" cellpadding="0" cellspacing="0">'+
+'<tr>'+
+'<td align="center" width="33%">'+
+'<div style="font-size:20px;margin-bottom:4px">🎲</div>'+
+'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em">Cekilis</div>'+
+'<div style="font-size:11px;color:#f0f0ff;margin-top:2px">'+dc+'</div>'+
+'</td>'+
+'<td align="center" width="33%">'+
+'<div style="font-size:20px;margin-bottom:4px">🏆</div>'+
+'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em">Odul</div>'+
+'<div style="font-size:11px;color:#ffd60a;margin-top:2px">'+prize+'</div>'+
+'</td>'+
+'<td align="center" width="33%">'+
+'<div style="font-size:20px;margin-bottom:4px">📅</div>'+
+'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em">Tarih</div>'+
+'<div style="font-size:11px;color:#f0f0ff;margin-top:2px">'+new Date().toLocaleDateString("tr-TR")+'</div>'+
+'</td>'+
+'</tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- FOOTER -->'+
+'<tr><td style="background:#07070f;border-radius:0 0 20px 20px;padding:20px 32px;text-align:center;border-top:1px solid rgba(255,255,255,.05)">'+
+'<span style="font-family:Impact,sans-serif;font-size:16px;font-weight:900;background:linear-gradient(135deg,#ff2d55,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">RAFFLE</span>'+
+'<p style="margin:6px 0 0;font-size:10px;color:rgba(255,255,255,.2)">Bu e-posta otomatik olarak gonderilmistir. Lutfen yanıtlamayın.</p>'+
+'</td></tr>'+
+
+'</table>'+
+'</td></tr>'+
+'</table>'+
+'</body></html>';
         await emailjs.send(ejsService,ejsTemplate,{to_email:winner.email,to_name:wn,subject:emailSubject||"Tebrikler!",message:body,prize,draw_name:dc,organizer_email:oe,organizer_name:ME?(ME.displayName||ME.email||"Org"):"Org"});
         sent=true;
         try{await updateDoc(doc(db,"giveaways",mgrId),{emailsSent:increment(1)});}catch(e){}
@@ -1338,10 +1565,26 @@ document.getElementById("drawBtn").addEventListener("click",async()=>{
     }
     const medals=["🥇","🥈","🥉"];
     const wcEl=document.createElement("div");wcEl.className="w-card";
-    wcEl.innerHTML="<div class=\"w-card-rank\">"+(medals[ti]||"🏆")+" "+mgrWin+". Kazanan</div><div class=\"w-card-name\">"+(winner.name||"—")+"</div><div class=\"w-card-email\">"+winner.email+"</div><span class=\"w-card-prize\">"+prize+"</span>"+(sent?"<div class=\"w-card-sent\">✅ Eposta gonderildi</div>":"");
+    wcEl.innerHTML="<div class=\"w-card-rank\">"+(medals[ti]||"🏆")+" "+mgrWin+". Kazanan</div><div class=\"w-card-name\">"+(winner.name||"—")+"</div><div class=\"w-card-email\">"+winner.email+"</div><span class=\"w-card-prize\">"+prize+"</span>"+(sent?"<div class=\"w-card-sent\">✅ Eposta gonderildi</div>":"<div style=\"margin-top:5px;display:flex;gap:5px\"><button class=\"btn ghost sm retry-email\" data-email=\""+winner.email+"\" data-name=\""+winner.name+"\" data-prize=\""+prize+"\" style=\"font-size:10px;padding:4px 8px\">📧 Tekrar Gonder</button></div>");
     document.getElementById("mgrWL").prepend(wcEl);
+    // Retry email handler
+    wcEl.querySelector(".retry-email")&&wcEl.querySelector(".retry-email").addEventListener("click",async function(){
+      const btn=this;btn.disabled=true;btn.textContent="Gonderiliyor...";
+      const{ejsService,ejsTemplate,ejsKey,emailSubject,drawName}=mgrData;
+      const wn=btn.dataset.name||"Kazanan",dc=(drawName||mgrId).replace(/_/g," "),oe=ME?ME.email||"":"";
+      try{
+        emailjs.init({publicKey:ejsKey});
+        const body="Merhaba "+wn+", Tebrikler! "+dc+" cekilisinde "+btn.dataset.prize+" kazandiniz! Organizator: "+oe;
+        await emailjs.send(ejsService,ejsTemplate,{to_email:btn.dataset.email,to_name:wn,subject:emailSubject||"Tebrikler!",message:body,prize:btn.dataset.prize,draw_name:dc,organizer_email:oe,organizer_name:ME?(ME.displayName||ME.email||"Org"):"Org"});
+        btn.textContent="✅ Gonderildi!";toast("Eposta gonderildi!");
+      }catch(e){btn.disabled=false;btn.textContent="📧 Tekrar Gonder";toast("Hata: "+(e.text||e.message),"err");}
+    });
     toast("🏆 Kazanan: "+(winner.name||winner.email));
     showNotif("🏆 Kazanan secildi: "+(winner.name||winner.email),"info",5000);
+    // Browser notification
+    if("Notification" in window&&Notification.permission==="granted"){
+      new Notification("🏆 Kazanan Secildi!",{body:winner.name+" — "+prizeName,icon:"https://em-content.zobj.net/source/apple/354/trophy_1f3c6.png"});
+    }
     btn.disabled=false;btn.style.opacity="1";
     if(mgrWin>=Math.max(mgrPrizess.length,1)){btn.disabled=true;btn.style.opacity=".3";btn.textContent="Tum Oduller Verildi";}
   });
@@ -1404,7 +1647,135 @@ function runLive(){
           try{
             emailjs.init({publicKey:ejsKey});
             const wn=winner.name||"Kazanan",dc=(drawName||mgrId).replace(/_/g," "),oe=ME?ME.email||"":"";
-            const body='<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;background:#0d0d0d;border-radius:16px;overflow:hidden"><div style="background:linear-gradient(135deg,#ff2d55,#ff9500);padding:28px;text-align:center"><div style="font-size:44px;margin-bottom:7px">&#127942;</div><div style="color:#fff;font-size:20px;font-weight:800">Tebrikler!</div></div><div style="padding:28px"><p style="color:#f0f0ff;font-size:15px;margin:0 0 18px">Merhaba <b>'+wn+'</b>,</p><div style="background:rgba(255,214,10,.08);border:1px solid rgba(255,214,10,.28);border-radius:11px;padding:18px;margin-bottom:18px;text-align:center"><div style="color:#ffd60a;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px">KAZANILAN ODUL</div><div style="color:#f0f0ff;font-size:18px;font-weight:800">'+prize+'</div></div><div style="background:#1a1a2e;border-radius:11px;padding:14px;margin-bottom:20px"><div style="color:#9898b8;font-size:11px;margin-bottom:5px">Organizator:</div><a href="mailto:'+oe+'" style="color:#ff2d55;font-size:14px;font-weight:600;text-decoration:none">'+oe+'</a></div></div><div style="background:#0a0a14;padding:14px;text-align:center"><div style="color:#5a5a7a;font-size:11px">Raffle Ekibi</div></div></div>';
+            const body='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tebrikler!</title></head><body style="margin:0;padding:0;background:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif">'+
+'<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:32px 16px">'+
+'<tr><td align="center">'+
+'<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto">'+
+
+'<!-- LOGO BAR -->'+
+'<tr><td style="padding:0 0 20px;text-align:center">'+
+'<span style="font-family:Impact,sans-serif;font-size:22px;font-weight:900;background:linear-gradient(135deg,#ff2d55,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.02em">RAFFLE</span>'+
+'</td></tr>'+
+
+'<!-- HERO BANNER -->'+
+'<tr><td style="border-radius:20px 20px 0 0;background:linear-gradient(135deg,#1a0010 0%,#0d0520 50%,#001a10 100%);padding:0;overflow:hidden">'+
+'<table width="100%" cellpadding="0" cellspacing="0">'+
+'<tr><td style="background:linear-gradient(135deg,#ff2d55,#ff6b00);padding:3px 0;border-radius:20px 20px 0 0"></td></tr>'+
+'<tr><td style="padding:40px 32px 36px;text-align:center">'+
+'<div style="display:inline-block;background:rgba(255,214,10,.12);border:2px solid rgba(255,214,10,.35);border-radius:50%;width:72px;height:72px;line-height:72px;font-size:40px;margin-bottom:18px">&#127942;</div>'+
+'<h1 style="margin:0 0 8px;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:-.04em;line-height:1.1">Tebrikler,<br><span style="background:linear-gradient(135deg,#ffd60a,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">'+wn+'!</span></h1>'+
+'<p style="margin:0;font-size:15px;color:rgba(255,255,255,.6);letter-spacing:.01em">Cekilisi Kazandiniz 🎉</p>'+
+'</td></tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- PRIZE CARD -->'+
+'<tr><td style="background:#0f0f1e;padding:0 32px">'+
+'<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:linear-gradient(135deg,rgba(255,214,10,.08),rgba(255,149,0,.05));border:1px solid rgba(255,214,10,.3);border-radius:14px;overflow:hidden">'+
+'<tr><td style="background:linear-gradient(135deg,rgba(255,214,10,.15),rgba(255,149,0,.1));padding:10px 20px;text-align:center">'+
+'<span style="font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:#ffd60a">✦ KAZANILAN ODUL ✦</span>'+
+'</td></tr>'+
+'<tr><td style="padding:22px 20px;text-align:center">'+
+'<div style="font-size:28px;font-weight:900;color:#ffffff;margin-bottom:6px;letter-spacing:-.02em">'+prize+'</div>'+
+'<div style="display:inline-block;background:rgba(255,149,0,.12);border:1px solid rgba(255,149,0,.3);border-radius:20px;padding:4px 14px;font-size:12px;color:#ff9500;font-weight:600;margin-top:4px">'+dc+' Cekilisi</div>'+
+'</td></tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- STEPS -->'+
+'<tr><td style="background:#0f0f1e;padding:0 32px 24px">'+
+'<p style="margin:0 0 14px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3)">ODULUNUZU ALMAK ICIN</p>'+
+'<table width="100%" cellpadding="0" cellspacing="0">'+
+'<tr>'+
+'<td width="36" style="vertical-align:top;padding-right:10px">'+
+'<div style="width:32px;height:32px;background:linear-gradient(135deg,#ff2d55,#ff9500);border-radius:8px;text-align:center;line-height:32px;font-size:14px;font-weight:900;color:#fff">1</div>'+
+'</td>'+
+'<td style="vertical-align:middle;padding:6px 0">'+
+'<div style="font-size:13px;color:#f0f0ff;font-weight:600">Organizatore Ulasin</div>'+
+'<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">Asagidaki e-posta adresine yazin</div>'+
+'</td>'+
+'</tr>'+
+'<tr><td colspan="2" style="padding:6px 0">'+
+'<div style="height:20px;border-left:1px dashed rgba(255,255,255,.1);margin-left:16px"></div>'+
+'</td></tr>'+
+'<tr>'+
+'<td width="36" style="vertical-align:top;padding-right:10px">'+
+'<div style="width:32px;height:32px;background:linear-gradient(135deg,#0a84ff,#5856d6);border-radius:8px;text-align:center;line-height:32px;font-size:14px;font-weight:900;color:#fff">2</div>'+
+'</td>'+
+'<td style="vertical-align:middle;padding:6px 0">'+
+'<div style="font-size:13px;color:#f0f0ff;font-weight:600">Bu E-postayı Gosterin</div>'+
+'<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">Kazandığınızın kaniti olarak kullanin</div>'+
+'</td>'+
+'</tr>'+
+'<tr><td colspan="2" style="padding:6px 0">'+
+'<div style="height:20px;border-left:1px dashed rgba(255,255,255,.1);margin-left:16px"></div>'+
+'</td></tr>'+
+'<tr>'+
+'<td width="36" style="vertical-align:top;padding-right:10px">'+
+'<div style="width:32px;height:32px;background:linear-gradient(135deg,#34c759,#00b894);border-radius:8px;text-align:center;line-height:32px;font-size:14px;font-weight:900;color:#fff">3</div>'+
+'</td>'+
+'<td style="vertical-align:middle;padding:6px 0">'+
+'<div style="font-size:13px;color:#f0f0ff;font-weight:600">Odulunuzu Teslim Alin</div>'+
+'<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">Organizator size ulaşacaktir</div>'+
+'</td>'+
+'</tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- CONTACT -->'+
+'<tr><td style="background:#0f0f1e;padding:0 32px 28px">'+
+'<table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,45,85,.07);border:1px solid rgba(255,45,85,.2);border-radius:12px">'+
+'<tr><td style="padding:16px 18px">'+
+'<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:7px">ORGANIZATOR ILETISIM</div>'+
+'<div style="display:flex;align-items:center;gap:10px">'+
+'<div style="font-size:22px">👤</div>'+
+'<div>'+
+'<div style="font-size:14px;font-weight:700;color:#f0f0ff;margin-bottom:2px">'+oe+'</div>'+
+'<a href="mailto:'+oe+'" style="font-size:11px;color:#ff2d55;text-decoration:none;font-weight:600">✉ E-posta Gonder →</a>'+
+'</div>'+
+'</div>'+
+'</td></tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- DIVIDER -->'+
+'<tr><td style="background:#0f0f1e;padding:0 32px">'+
+'<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent)"></div>'+
+'</td></tr>'+
+
+'<!-- INFO ROW -->'+
+'<tr><td style="background:#0f0f1e;padding:20px 32px">'+
+'<table width="100%" cellpadding="0" cellspacing="0">'+
+'<tr>'+
+'<td align="center" width="33%">'+
+'<div style="font-size:20px;margin-bottom:4px">🎲</div>'+
+'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em">Cekilis</div>'+
+'<div style="font-size:11px;color:#f0f0ff;margin-top:2px">'+dc+'</div>'+
+'</td>'+
+'<td align="center" width="33%">'+
+'<div style="font-size:20px;margin-bottom:4px">🏆</div>'+
+'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em">Odul</div>'+
+'<div style="font-size:11px;color:#ffd60a;margin-top:2px">'+prize+'</div>'+
+'</td>'+
+'<td align="center" width="33%">'+
+'<div style="font-size:20px;margin-bottom:4px">📅</div>'+
+'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em">Tarih</div>'+
+'<div style="font-size:11px;color:#f0f0ff;margin-top:2px">'+new Date().toLocaleDateString("tr-TR")+'</div>'+
+'</td>'+
+'</tr>'+
+'</table>'+
+'</td></tr>'+
+
+'<!-- FOOTER -->'+
+'<tr><td style="background:#07070f;border-radius:0 0 20px 20px;padding:20px 32px;text-align:center;border-top:1px solid rgba(255,255,255,.05)">'+
+'<span style="font-family:Impact,sans-serif;font-size:16px;font-weight:900;background:linear-gradient(135deg,#ff2d55,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">RAFFLE</span>'+
+'<p style="margin:6px 0 0;font-size:10px;color:rgba(255,255,255,.2)">Bu e-posta otomatik olarak gonderilmistir. Lutfen yanıtlamayın.</p>'+
+'</td></tr>'+
+
+'</table>'+
+'</td></tr>'+
+'</table>'+
+'</body></html>';
             await emailjs.send(ejsService,ejsTemplate,{to_email:winner.email,to_name:wn,subject:emailSubject||"Tebrikler!",message:body,prize,draw_name:dc,organizer_email:oe,organizer_name:ME?(ME.displayName||ME.email||"Org"):"Org"});
             try{await updateDoc(doc(db,"giveaways",mgrId),{emailsSent:increment(1)});}catch(e){}
           }catch(err){}
@@ -1448,11 +1819,24 @@ async function initPP(){
         document.getElementById("ppIco").style.display="none";
       }
       if(dw.desc){document.getElementById("ppDescEl").textContent=dw.desc;}
+      // Block join if draw ended
+      if(dw.endTime && new Date(dw.endTime) < new Date()){
+        const formCard=document.getElementById("ppFormCard");
+        if(formCard){
+          formCard.innerHTML='<div style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:10px">⏰</div><div style="font-family:\'Unbounded\',sans-serif;font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px">Cekilis Sona Erdi!</div><div style="font-size:12px;color:var(--t2)">Bu cekilisin suresi dolmustur. Katilim kapali.</div></div>';
+        }
+        return;
+      }
       if(dw.maxParticipants){
         window._ppMaxP=dw.maxParticipants;
         const sub=document.getElementById("ppFormSub");
         if(sub)sub.textContent="Sadece @gmail.com. Max "+dw.maxParticipants+" kisi katilabilir.";
       }
+      // Store draw info for support
+      window._ppDrawName = dw.drawName||drawId;
+      // Store organizer contact - use ejsService owner or ask user
+      window._ppOrgEmailFinal = dw.organizerEmail || dw.contactEmail || "";
+      // If no email stored, support modal will ask user to enter it
       const medals=["🥇","🥈","🥉"],cls=["pp-p1","pp-p2","pp-p3"],lbl=["Birinci Odul","Ikinci Odul","Ucuncu Odul"];
       if((dw.prizes||[]).length){
         const pc=document.getElementById("ppPrizes");pc.classList.remove("hidden");
@@ -1470,6 +1854,77 @@ async function initPP(){
       }
     }
   }catch(e){console.error(e);}
+  // Cancel join handler (works for both already & success states)
+  function setupCancelBtn(id){
+    const btn=document.getElementById(id);
+    if(!btn)return;
+    btn.addEventListener("click",async()=>{
+      if(!confirm("Katiliminizi iptal etmek istediginizden emin misiniz? Bilgileriniz silinecek."))return;
+      btn.disabled=true;btn.textContent="İptal ediliyor...";
+      try{
+        // Find participant by stored email in localStorage or search all
+        const snap=await getDocs(collection(db,"giveaways/"+drawId+"/participants"));
+        let found=null;
+        // Try to match by localStorage hint or just show email input
+        const emailInput=prompt("Katilim silinsin mi? Onaylamak icin Gmail adresinizi girin:");
+        if(!emailInput)return;
+        snap.forEach(d=>{
+          if(d.data().email===emailInput.trim().toLowerCase()&&!d.data().isWinner)found={id:d.id,...d.data()};
+        });
+        if(!found){
+          alert("Bu e-posta ile katilim bulunamadi veya kazanan secilmis (iptal edilemez).");
+          btn.disabled=false;btn.textContent="↩️ Katilimi İptal Et";
+          return;
+        }
+        await deleteDoc(doc(db,"giveaways/"+drawId+"/participants",found.id));
+        await updateDoc(doc(db,"giveaways",drawId),{partCount:increment(-1)});
+        // Clear localStorage
+        localStorage.removeItem("joined_"+drawId);
+        // Reset UI
+        document.getElementById("ppAlr").style.display="none";
+        document.getElementById("ppOk").style.display="none";
+        document.getElementById("ppFormCard").classList.remove("hidden");
+        document.getElementById("ppN").value="";
+        document.getElementById("ppE").value=emailInput.trim().toLowerCase();
+        document.getElementById("ppI").value="";
+        document.getElementById("joinBtn").disabled=false;
+        document.getElementById("joinBtn").innerHTML="🚀 Hemen Katil";
+        alert("Katiliminiz iptal edildi. Formu yeniden doldurabilirsiniz.");
+      }catch(e){
+        alert("Hata: "+e.message);
+        btn.disabled=false;btn.textContent="↩️ Katilimi İptal Et";
+      }
+    });
+  }
+  setupCancelBtn("cancelJoinBtn");
+  setupCancelBtn("cancelJoinBtn2");
+
+  // Reset form button
+  const resetBtn = document.getElementById("resetFormBtn");
+  if(resetBtn){
+    resetBtn.addEventListener("click",()=>{
+      document.getElementById("ppN").value="";
+      document.getElementById("ppE").value="";
+      document.getElementById("ppI").value="";
+      document.getElementById("ppN").focus();
+    });
+  }
+
+  // Edit close button
+  const editCloseBtn = document.getElementById("editCloseBtn");
+  if(editCloseBtn) editCloseBtn.addEventListener("click",()=>document.getElementById("editOv").classList.remove("on"));
+
+  // Support button
+  const suppBtn = document.getElementById("supportBtn");
+  if(suppBtn){
+    suppBtn.addEventListener("click",()=>{
+      const orgEmail = window._ppOrgEmailFinal || "";
+      const dName = (window._ppDrawName||drawId).replace(/_/g," ");
+      const pEmail = document.getElementById("ppE")?.value || "";
+      openSupport(dName, orgEmail, pEmail);
+    });
+  }
+
   ppUnsub=onSnapshot(collection(db,"giveaways/"+drawId+"/participants"),snap=>{
     const maxPP=(window._ppMaxP||0);
     document.getElementById("ppCnt").textContent=maxPP>0?snap.size+"/"+maxPP:snap.size;
@@ -1496,7 +1951,7 @@ async function initPP(){
     if(!name){toast("Ad Soyad zorunlu!","err");return;}
     if(name.split(/\s+/).length<2){toast("Ad ve soyad girin!","err");return;}
     if(!email){toast("Email zorunlu!","err");return;}
-    if(!email.endsWith("@gmail.com")){toast("Sadece @gmail.com kabul edilir!","err");return;}
+    const gmailReg=/^[a-zA-Z0-9._%+\-]+@gmail\.com$/;if(!gmailReg.test(email)){toast("Gecerli bir @gmail.com adresi girin!","err");return;}
     const btn=document.getElementById("joinBtn");btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
     try{
       const dwCheck=await getDoc(doc(db,"giveaways",drawId));
@@ -1517,14 +1972,76 @@ async function initPP(){
       document.getElementById("ppFormCard").classList.add("hidden");
       document.getElementById("ppOk").style.display="block";
       const shareUrl=location.href;
-      document.getElementById("ppShare").innerHTML=
-        '<div class="share-row">'+
-        '<button class="btn ghost sm" onclick="window.open(\'https://wa.me/?text=\'+encodeURIComponent(\'🎉 Bu cekilise katildim! Sen de katil: \'+location.href),\'_blank\')">💬 WhatsApp</button>'+
-        '<button class="btn ghost sm" onclick="navigator.clipboard.writeText(location.href).then(()=>alert(\'Link kopyalandi!\'))">📋 Linki Kopyala</button>'+
-        '</div>';
+      const shareDiv=document.createElement("div");
+      shareDiv.className="share-row";
+      const waBtn2=document.createElement("button");
+      waBtn2.className="btn ghost sm";waBtn2.textContent="💬 WhatsApp";
+      waBtn2.addEventListener("click",()=>window.open("https://wa.me/?text="+encodeURIComponent("Bu cekilise katil: "+location.href),"_blank"));
+      const cpBtn2=document.createElement("button");
+      cpBtn2.className="btn ghost sm";cpBtn2.textContent="📋 Linki Kopyala";
+      cpBtn2.addEventListener("click",()=>navigator.clipboard.writeText(location.href).then(()=>toast("Link kopyalandi!")));
+      shareDiv.appendChild(waBtn2);shareDiv.appendChild(cpBtn2);
+      document.getElementById("ppShare").appendChild(shareDiv);
       boom();
     }catch(e){toast("Hata: "+e.message,"err");btn.disabled=false;btn.innerHTML="🚀 Hemen Katil";}
   });
+}
+
+// ── SUPPORT SYSTEM ──
+document.getElementById("supportClose")?.addEventListener("click",()=>document.getElementById("supportOv").classList.remove("on"));
+document.getElementById("supportOv")?.addEventListener("click",e=>{if(e.target===document.getElementById("supportOv"))document.getElementById("supportOv").classList.remove("on");});
+
+function openSupport(drawName, creatorEmail, participantEmail){
+  const orgEmail = creatorEmail || "";
+  const dn = (drawName||"").replace(/_/g," ");
+  const pEmail = participantEmail || "";
+
+  const issues = [
+    {icon:"📧",title:"Yanlis E-posta Girdim",sub:"Katilim sirasinda e-postami yanlis yazdim",subject:"Yanlis E-posta - "+dn+" Cekilisi",body:"Merhaba,\n\n"+dn+" cekilisine katilim sirasinda e-posta adresimi yanlis yazdim.\n\nDogru e-posta adresim: [DOGRU E-POSTANIZI YAZIN]\nYanlis girdigim adres: "+pEmail+"\n\nKatilimimin guncellenmesini rica ediyorum.\n\nTesekkurler."},
+    {icon:"👤",title:"Yanlis Isim Girdim",sub:"Adim veya soyadim hatali kayitli",subject:"Yanlis Isim - "+dn+" Cekilisi",body:"Merhaba,\n\n"+dn+" cekilisine katilim sirasinda ismimi yanlis yazdim.\n\nDogru ad soyad: [DOGRU ISMINIZI YAZIN]\nE-posta adresim: "+pEmail+"\n\nIsmimin guncellenmesini rica ediyorum.\n\nTesekkurler."},
+    {icon:"📭",title:"Kazandim Ama E-posta Gelmedi",sub:"Kazanan oldugum soylendi ama bildirim almadim",subject:"E-posta Alinamadi - "+dn+" Cekilisi",body:"Merhaba,\n\n"+dn+" cekilisini kazandigimi ogrendim ancak e-posta bildirimini alamadim.\n\nE-posta adresim: "+pEmail+"\nSpam klasorunu kontrol ettim ama bulamadim.\n\nOdul teslimi icin bilgi almak istiyorum.\n\nTesekkurler."},
+    {icon:"🚫",title:"Katılamıyorum / Sayfa Acılmıyor",sub:"Cekilis sayfasinda teknik sorun yasiyorum",subject:"Teknik Sorun - "+dn+" Cekilisi",body:"Merhaba,\n\n"+dn+" cekilisine katilmaya calisiyorum ancak teknik bir sorunla karsilasiyorum.\n\nSorun: [SORUNUNUZU ACIKLAYIN]\nCihazim: [CIHAZ BILGINIZI YAZIN]\n\nYardimci olabilir misiniz?\n\nTesekkurler."},
+    {icon:"🔄",title:"Bilgilerimi Guncellmek Istiyorum",sub:"E-posta veya isim degisikligi talep ediyorum",subject:"Bilgi Guncelleme - "+dn+" Cekilisi",body:"Merhaba,\n\n"+dn+" cekilisindeki katilim bilgilerimi guncellemek istiyorum.\n\nMevcut e-posta: "+pEmail+"\nGuncellemek istedigim bilgi: [GUNCELLEMEYI YAZIN]\n\nYardimci olabilir misiniz?\n\nTesekkurler."},
+    {icon:"🏆",title:"Odulumu Almak Istiyorum",sub:"Kazandim, odul teslimi hakkinda bilgi almak istiyorum",subject:"Odul Teslimi - "+dn+" Cekilisi",body:"Merhaba,\n\n"+dn+" cekilisini kazandim ve odulumu almak istiyorum.\n\nAdim: [ISMINIZI YAZIN]\nE-posta: "+pEmail+"\n\nOdul teslimi icin ne yapmam gerektigini ogrenebilir miyim?\n\nTesekkurler."},
+    {icon:"❓",title:"Diger Sorun",sub:"Yukaridakilerin disinda bir sorunum var",subject:"Genel Destek - "+dn+" Cekilisi",body:"Merhaba,\n\n"+dn+" cekilisiyle ilgili bir sorunum var.\n\nE-posta: "+pEmail+"\nSorunum: [SORUNUNUZU BURAYA YAZIN]\n\nYardimci olabilir misiniz?\n\nTesekkurler."}
+  ];
+
+  const container = document.getElementById("supportOptions");
+  container.innerHTML = "";
+
+  issues.forEach(issue => {
+    const btn = document.createElement("button");
+    btn.className = "support-opt";
+    btn.innerHTML =
+      '<div class="support-opt-icon">'+issue.icon+'</div>'+
+      '<div>'+
+        '<div class="support-opt-title">'+issue.title+'</div>'+
+        '<div class="support-opt-sub">'+issue.sub+'</div>'+
+      '</div>'+
+      '<div style="margin-left:auto;color:var(--t3);font-size:14px">→</div>';
+
+    btn.addEventListener("click",()=>{
+      if(!orgEmail){
+        const inputEmail = prompt("Organizatörün e-posta adresini girin\n(Çekiliş sayfasında veya organizatörden öğrenebilirsiniz):");
+        if(!inputEmail||!inputEmail.includes("@")){
+          alert("Geçerli bir e-posta adresi girilmedi.");
+          return;
+        }
+        orgEmail = inputEmail.trim();
+      }
+      // Open Gmail with pre-filled content
+      const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1"+
+        "&to="+encodeURIComponent(orgEmail)+
+        "&su="+encodeURIComponent(issue.subject)+
+        "&body="+encodeURIComponent(issue.body);
+      window.open(gmailUrl,"_blank");
+      document.getElementById("supportOv").classList.remove("on");
+    });
+
+    container.appendChild(btn);
+  });
+
+  document.getElementById("supportOv").classList.add("on");
 }
 
 if(!isPart&&!isProf)loadDiscover();
