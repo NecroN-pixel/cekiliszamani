@@ -1091,6 +1091,7 @@ async function loadDash(){
   }catch(e){toast("Hata: "+e.message,"err");}
 }
 document.getElementById("refBtn").addEventListener("click",loadDash);
+document.getElementById("editCloseBtn")?.addEventListener("click",()=>document.getElementById("editOv").classList.remove("on"));
 
 async function openEdit(drawId){
   const dd=await getDoc(doc(db,"giveaways",drawId));
@@ -1231,7 +1232,7 @@ document.getElementById("pubBtn").addEventListener("click",async()=>{
     const existCheck=await getDoc(doc(db,"giveaways",drawId));
     if(existCheck.exists()){toast("Bu isimde cekilis zaten var! Farkli bir isim dene.","warn");return;}
     const maxP=parseInt(document.getElementById("cMaxP").value)||0;
-    await setDoc(doc(db,"giveaways",drawId),{creatorId:ME.uid,creatorName:safeC,drawName:safeG,prizes,endTime,desc,emailSubject:subj,isPrivate,imageUrl,maxParticipants:maxP,ejsService:ejsS,ejsTemplate:ejsT,ejsKey:ejsK,partCount:0,winCount:0,emailsSent:0,createdAt:new Date()});
+    await setDoc(doc(db,"giveaways",drawId),{creatorId:ME.uid,creatorName:safeC,drawName:safeG,prizes,endTime,desc,emailSubject:subj,isPrivate,imageUrl,maxParticipants:maxP,ejsService:ejsS,ejsTemplate:ejsT,ejsKey:ejsK,organizerEmail:ME.email||'',partCount:0,winCount:0,emailsSent:0,createdAt:new Date()});
     const link=location.origin+location.pathname+"?c="+safeC+"&g="+safeG;
     document.getElementById("linkUrl").textContent=link;
     document.getElementById("linkBox").classList.remove("hidden");
@@ -1302,7 +1303,9 @@ async function openMgr(drawId,drawName,prizes){
   });
 }
 function loadJoinStats(drawId){
-  getDocs(collection(db,"giveaways/"+drawId+"/participants")).then(snap=>{
+  // Use already-loaded allPts to avoid extra Firestore read
+  Promise.resolve().then(()=>{
+    const snap={forEach:(fn)=>allPts.forEach(p=>fn({data:()=>p}))};
     const hourCounts={};
     snap.forEach(d=>{
       const ts=d.data().timestamp;
@@ -1326,7 +1329,7 @@ function loadJoinStats(drawId){
   }).catch(()=>{});
 }
 
-document.getElementById("rerollBtn").addEventListener("click",async()=>{
+document.getElementById("rerollBtn")?.addEventListener("click",async()=>{
   if(mgrWin===0){toast("Henuz kazanan secilmedi","warn");return;}
   if(!confirm("Son kazanani iptal edip yeniden cekmek istiyor musunuz?"))return;
   // Find last winner
@@ -1834,9 +1837,7 @@ async function initPP(){
       }
       // Store draw info for support
       window._ppDrawName = dw.drawName||drawId;
-      // Store organizer contact - use ejsService owner or ask user
-      window._ppOrgEmailFinal = dw.organizerEmail || dw.contactEmail || "";
-      // If no email stored, support modal will ask user to enter it
+      window._ppOrgEmailFinal = dw.organizerEmail || "";
       const medals=["🥇","🥈","🥉"],cls=["pp-p1","pp-p2","pp-p3"],lbl=["Birinci Odul","Ikinci Odul","Ucuncu Odul"];
       if((dw.prizes||[]).length){
         const pc=document.getElementById("ppPrizes");pc.classList.remove("hidden");
@@ -1877,7 +1878,10 @@ async function initPP(){
           return;
         }
         await deleteDoc(doc(db,"giveaways/"+drawId+"/participants",found.id));
-        await updateDoc(doc(db,"giveaways",drawId),{partCount:increment(-1)});
+        const curSnap=await getDoc(doc(db,"giveaways",drawId));
+        if(curSnap.exists()&&(curSnap.data().partCount||0)>0){
+          await updateDoc(doc(db,"giveaways",drawId),{partCount:increment(-1)});
+        }
         // Clear localStorage
         localStorage.removeItem("joined_"+drawId);
         // Reset UI
@@ -1910,10 +1914,6 @@ async function initPP(){
     });
   }
 
-  // Edit close button
-  const editCloseBtn = document.getElementById("editCloseBtn");
-  if(editCloseBtn) editCloseBtn.addEventListener("click",()=>document.getElementById("editOv").classList.remove("on"));
-
   // Support button
   const suppBtn = document.getElementById("supportBtn");
   if(suppBtn){
@@ -1925,6 +1925,7 @@ async function initPP(){
     });
   }
 
+  if(ppUnsub){ppUnsub();ppUnsub=null;}
   ppUnsub=onSnapshot(collection(db,"giveaways/"+drawId+"/participants"),snap=>{
     const maxPP=(window._ppMaxP||0);
     document.getElementById("ppCnt").textContent=maxPP>0?snap.size+"/"+maxPP:snap.size;
@@ -2020,14 +2021,17 @@ function openSupport(drawName, creatorEmail, participantEmail){
       '</div>'+
       '<div style="margin-left:auto;color:var(--t3);font-size:14px">→</div>';
 
-    btn.addEventListener("click",()=>{
+    btn.addEventListener("click",async()=>{
       if(!orgEmail){
-        const inputEmail = prompt("Organizatörün e-posta adresini girin\n(Çekiliş sayfasında veya organizatörden öğrenebilirsiniz):");
-        if(!inputEmail||!inputEmail.includes("@")){
-          alert("Geçerli bir e-posta adresi girilmedi.");
-          return;
+        try{
+          const dSnap=await getDoc(doc(db,"giveaways",window._ppDrawId||""));
+          if(dSnap.exists())orgEmail=dSnap.data().organizerEmail||"";
+        }catch(e){}
+        if(!orgEmail){
+          const inp=prompt("Organizatorun e-posta adresini girin:");
+          if(!inp||!inp.includes("@")){alert("Gecerli e-posta girilmedi.");return;}
+          orgEmail=inp.trim();
         }
-        orgEmail = inputEmail.trim();
       }
       // Open Gmail with pre-filled content
       const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1"+
