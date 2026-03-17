@@ -2,14 +2,16 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#ff2d55">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Raffle">
+<meta name="theme-color" content="#05050f">
+<meta name="msapplication-TileColor" content="#05050f">
+<meta name="msapplication-navbutton-color" content="#ff2d55">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="https://em-content.zobj.net/source/apple/354/trophy_1f3c6.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <title>Raffle</title>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -21,8 +23,14 @@
   --fire:linear-gradient(135deg,#ff2d55,#ff9500);
   --gold:linear-gradient(135deg,#ffd60a,#ff9500);
 }
-html{scroll-behavior:smooth}
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
+html{scroll-behavior:smooth;height:100%}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;min-height:100dvh;overflow-x:hidden;line-height:1.5;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+@media(min-width:1024px){.disc-body,.dash,.pr-body,.cw{max-width:960px;margin:0 auto}.grid,.my-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}.kpis{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:600px)and(max-width:1023px){.grid,.my-grid{grid-template-columns:repeat(2,1fr)}}
+@media(display-mode:standalone),@media(display-mode:fullscreen){body{-webkit-overflow-scrolling:touch}::-webkit-scrollbar{display:none}}
+@media(min-width:1024px){::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:rgba(255,45,85,.3);border-radius:3px}}
+nav{padding-top:env(safe-area-inset-top);height:calc(56px + env(safe-area-inset-top))}
+.pg{padding-top:calc(56px + env(safe-area-inset-top))}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
 /* AMBIENT */
@@ -395,7 +403,7 @@ textarea.inp{resize:vertical}
     <button class="tab" data-p="pgP">📊 <span>Panel</span></button>
     <button class="tab" data-p="pgC">✨ <span>Olustur</span></button>
   </div>
-  <div id="navR"></div>
+  <div id="navR"></div><button id="installBtn" class="btn ghost sm hidden" style="font-size:10px;padding:5px 8px;flex-shrink:0">📲 Yukle</button>
 </nav>
 
 <!-- DISCOVER -->
@@ -2084,6 +2092,30 @@ function openSupport(drawName, creatorEmail, participantEmail){
 }
 
 if(!isPart&&!isProf)loadDiscover();
+
+// PWA Install prompt
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  const btn=document.getElementById('installBtn');
+  if(btn)btn.classList.remove('hidden');
+});
+document.getElementById('installBtn')?.addEventListener('click',async()=>{
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  const{outcome}=await deferredPrompt.userChoice;
+  if(outcome==='accepted')document.getElementById('installBtn')?.classList.add('hidden');
+  deferredPrompt=null;
+});
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('installBtn')?.classList.add('hidden');
+  deferredPrompt=null;
+});
+
+// Register service worker for PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
